@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Game Test</title>
+	<script type="text/javascript" src="http://code.jquery.com/jquery-3.2.1.min.js"></script>
+</head>
+<body>
+	<canvas id="myCanvas" width="300" height="300" style="border: 1px solid black;"></canvas>
+	<script type="text/javascript">
+		var canvas = document.getElementById("myCanvas");
+		var ctx = canvas.getContext("2d");
+		//window-size info
+		var WIDTH;
+		var HEIGHT;
+		//obstacle info
+		var obBallX;
+		var obBallY;
+		var obBallR;
+		var dx;
+		var dy;
+		//user info
+		var userBall = {
+			X: 0,
+			Y: 0,
+			R: 0,
+			is_exist: true
+		};
+		//goal info
+		var goal = {
+			X: 0,
+			Y: 0,
+			R: 0,
+			is_exist: false
+		};
+		//stage info
+		var stage = {
+			n: 0
+		};
+		//obs array
+		var obsArray = new Array();
+		//keyboard arrow-key
+		var rightDown;
+		var leftDown;
+		var upDown;
+		var downDown;
+		//*global game variable (pattern)
+		var count = 0;
+
+		function init() {
+			WIDTH = 300;
+			HEIGHT = 300;
+			obBallX = 10;
+			obBallY = 90;
+			obBallR = 10;
+			dx = 4;
+			dy = -4;
+			userBall.X = 10;
+			userBall.Y = 10;
+			userBall.R = 8;
+			goal.X = 288;	
+			goal.Y = 288;
+			goal.R = 10;
+			goal.is_goal = false;
+			stage.n = 1;
+			rightDown = false;
+			leftDown = false;
+			upDown = false;
+			downDown = false;
+
+			init_obs();
+		}
+
+		function stage_init() {
+			stage.n++;
+			goal.is_exist = false;
+		}
+
+		function position_init() {
+			userBall.X = 10;
+			userBall.Y = 10;
+
+			userBall.is_exist = true;
+		}
+
+		function init_obs() {
+			if (stage.n == 1)
+			{
+				for (var i=0; i<6; i++)
+				{
+					obsArray[i] = {
+						X: obBallX + i*40,
+						Y: obBallY + i*40,
+						R: obBallR,
+						DX: dx,
+						DY: dy,
+						is_exist: true
+					};
+				}
+			}
+			else if (stage.n == 2)
+			{
+				for (var i=0; i<24; i++)
+				{
+					if (i < 12)
+					{
+						obsArray[i] = {
+							X: obBallX + i*25 + 2,
+							Y: obBallY + 55,
+							R: obBallR,
+							DX: dx,
+							DY: dy,
+							is_exist: true
+						};
+					}
+					else
+					{
+						obsArray[i] = {
+							X: obBallX + (i-12)*25 + 2,
+							Y: obBallY + 55,
+							R: obBallR,
+							DX: dx,
+							DY: dy,
+							is_exist: true
+						};						
+					}
+				}
+			}
+			else if (stage.n == 3)
+			{
+				for (var i=0; i<20; i++)
+				{
+					obsArray[i] = {
+						X: obBallX + i*Math.floor(Math.random()*10),
+						Y: obBallY + i*Math.floor(Math.random()*10),
+						R: obBallR,
+						DX: dx,
+						DY: dy,
+						is_exist: true
+					};
+				}				
+			}
+		}		
+
+		function onKeyDown(e) {
+			if (e.keyCode == 39)
+				rightDown = true;
+			else if (e.keyCode == 37)
+				leftDown = true;
+			else if (e.keyCode == 40)
+				upDown = true;
+			else if (e.keyCode == 38)
+				downDown = true;
+		}
+
+		function onKeyUp(e) {
+			if (e.keyCode == 39)
+				rightDown = false;
+			else if (e.keyCode == 37)
+				leftDown = false;
+			else if (e.keyCode == 40)
+				upDown = false;
+			else if (e.keyCode == 38)
+				downDown = false;
+		}
+
+		function collision(c1, c2) {
+			var vx = c1.X - c2.X;
+			var vy = c1.Y - c2.Y;
+
+			var d = Math.sqrt((vx * vx) + (vy * vy));
+			var sum_r = c1.R + c2.R;
+
+			if (d <= sum_r)
+				return true;
+			else
+				return false;
+		}
+
+		function clear() {
+			ctx.clearRect(0, 0, WIDTH, HEIGHT);
+		}
+
+		function background_tile() {
+			for (var i=0; i<12; i++)
+			{
+				for (var j=0; j<12; j++)
+				{
+					if ((i % 2 == 0) && (j % 2 == 0))
+					{
+						ctx.fillStyle = "#EAEAEA";
+						ctx.fillRect(i*25, j*25, 25, 25);
+					}
+
+					if ((i % 2 == 1) && (j % 2 == 1))
+					{
+						ctx.fillStyle = "#EAEAEA";
+						ctx.fillRect(i*25, j*25, 25, 25);
+					}
+				}
+			}
+		}
+
+		function user_control() {
+			if (rightDown)
+		  		userBall.X += 2.5;
+ 			else if (leftDown)
+ 				userBall.X -= 2.5;
+ 			else if (upDown)
+ 				userBall.Y += 2.5;
+ 			else if (downDown)
+ 				userBall.Y -= 2.5;
+		}
+
+		function user_condition() {
+		 	if (userBall.X + userBall.R > WIDTH)
+		 		userBall.X = WIDTH - userBall.R;
+		 	else if (userBall.X - userBall.R < 0)
+		 		userBall.X = 0 + userBall.R;
+		 	else if (userBall.Y + userBall.R > HEIGHT)
+		 		userBall.Y = HEIGHT - userBall.R;
+		 	else if (userBall.Y - userBall.R < 0)
+		 		userBall.Y = 0 + userBall.R;
+		}
+
+		function user_draw() {
+			if (userBall.is_exist == false)
+			{
+				position_init();
+			}
+
+			ctx.fillStyle = "RED";
+		  	ctx.beginPath();
+  			ctx.arc(userBall.X, userBall.Y, userBall.R, 0, Math.PI*2, true);
+  			ctx.closePath();
+  			ctx.fill();
+		}
+
+		function goal_draw() {
+			if (goal.is_exist == false)
+		  	{
+			    ctx.fillStyle = "#FFE400";
+			  	ctx.beginPath();
+			  	ctx.arc(goal.X, goal.Y, goal.R, 0, Math.PI*2, true);
+			  	ctx.closePath();
+			  	ctx.fill();
+		    }
+		    else
+		    {
+		    	if (stage.n == 3)
+		    		clearInterval(intervalId);
+		    	stage_init();
+		    	position_init();
+		    	init_obs();
+		    }
+		}
+
+		function obs_draw() {
+  			ctx.fillStyle = "BLACK";
+
+			for (var i=0; i<obsArray.length; i++)
+			{
+				ctx.beginPath();
+				ctx.arc(obsArray[i].X, obsArray[i].Y, obsArray[i].R, 0, Math.PI*2, true); 
+				ctx.closePath();
+				ctx.fill();
+			}
+		}
+
+		function obs_pattern1() {
+			for (var i=0; i<obsArray.length; i++)
+			{
+				if ((obsArray[i].X - obsArray[i].R < 0) || (obsArray[i].X + obsArray[i].R > WIDTH))
+				{
+				  	obsArray[i].DX = -obsArray[i].DX;
+				 	obsArray[i].DY = -obsArray[i].DY;
+				}
+				else if ((obsArray[i].Y - obsArray[i].R < 0) || (obsArray[i].Y + obsArray[i].R > HEIGHT))
+				{
+				 	obsArray[i].DX = -obsArray[i].DX;
+				 	obsArray[i].DY = -obsArray[i].DY;
+				}
+
+				obsArray[i].X += obsArray[i].DX;
+				obsArray[i].Y += obsArray[i].DY;
+			}
+		}
+
+		function obs_pattern2() {
+			for (var i=0; i<obsArray.length; i++)
+			{
+				if (count > 360)
+				{
+					count = 0;
+				}
+
+				if (i < 12)
+				{
+					obsArray[i].X += Math.cos(count * Math.PI / 180) * 1;
+					obsArray[i].Y -= Math.sin(count * Math.PI / 180) * 1;
+				}
+				else
+				{
+					obsArray[i].X -= Math.cos(count * Math.PI / 180) * 1;
+					obsArray[i].Y += Math.sin(count * Math.PI / 180) * 1;					
+				}
+			}
+		}
+		
+		function obs_pattern3() {
+			for (var i=0; i<obsArray.length; i++)
+			{
+				for (var j=0; j<obsArray.length; j++)
+				{				
+					if (collision(obsArray[i], obsArray[j]))
+					{
+						obsArray[i].DX = -obsArray[i].DX;
+						obsArray[i].DY = -obsArray[i].DY;	
+						obsArray[j].DX = -obsArray[j].DX;
+						obsArray[j].DY = -obsArray[j].DY;		
+					}
+				}
+
+				if (obsArray[i].X + obsArray[i].R > WIDTH || obsArray[i].X - obsArray[i].R < 0)
+					obsArray[i].DX = -obsArray[i].DX;
+				if (obsArray[i].Y + obsArray[i].R > HEIGHT || obsArray[i].Y - obsArray[i].R < 0)
+					obsArray[i].DY = -obsArray[i].DY;	
+
+				if (i < 5)
+				{
+					obsArray[i].X += obsArray[i].DX;
+		 			obsArray[i].Y += obsArray[i].DY;
+				}
+				else if (i < 10)
+				{
+					obsArray[i].X -= obsArray[i].DX;
+		 			obsArray[i].Y += obsArray[i].DY;
+				}
+				else if (i < 15)
+				{
+					obsArray[i].X += obsArray[i].DX;
+		 			obsArray[i].Y -= obsArray[i].DY;
+				}
+				else
+				{
+					obsArray[i].X -= obsArray[i].DX;
+		 			obsArray[i].Y -= obsArray[i].DY;					
+				}
+			}
+		}
+		
+		function draw() {
+		  	clear();
+
+		  	user_control();
+		  	user_condition();
+		  	
+			background_tile();
+			count++;
+
+		  	if (stage.n == 1)
+		  	{
+		  		user_draw();
+		  		goal_draw();
+			  	obs_draw();
+			  	obs_pattern1();
+		    }
+		    else if (stage.n == 2)
+		    {
+		  		user_draw();
+		  		goal_draw();
+			  	obs_draw();
+			  	obs_pattern2();
+		    }
+		    else if (stage.n == 3)
+		    {
+		  		user_draw();
+		  		goal_draw();
+			  	obs_draw();
+			  	obs_pattern3();		    	
+		    }
+
+		    if (collision(userBall, goal))
+			  		goal.is_exist = true;
+
+			for (var i=0; i<obsArray.length; i++)
+			{
+			  	if (collision(userBall, obsArray[i]))
+			  	{
+			  		userBall.is_exist = false;
+			  	}
+			}
+		}
+
+		function game_loop() {
+			draw();
+		  	setInterval(draw, 10);
+		}
+
+		document.addEventListener('keydown', onKeyDown, false);
+		document.addEventListener('keyup', onKeyUp, false);
+
+		//game init
+		init();
+		game_loop();
+	</script>
+</body>
+</html>
